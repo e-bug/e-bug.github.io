@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Projects on emanuele bugliarello</title>
+    <link>https://e-bug.github.io/project/</link>
+    <description>Recent content in Projects on emanuele bugliarello</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2017 Emanuele Bugliarello</copyright>
+    <lastBuildDate>Sun, 26 Nov 2017 00:00:00 +0000</lastBuildDate>
+    <atom:link href="/project/" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>Performance of distributed TensorFlow</title>
+      <link>https://e-bug.github.io/project/distributed-tensorflow/</link>
+      <pubDate>Sun, 26 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://e-bug.github.io/project/distributed-tensorflow/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Parallel Mandelbrot Set</title>
+      <link>https://e-bug.github.io/project/mandelbrot/</link>
+      <pubDate>Sat, 25 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://e-bug.github.io/project/mandelbrot/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>WikipEdits</title>
+      <link>https://e-bug.github.io/project/wikipedits/</link>
+      <pubDate>Fri, 24 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://e-bug.github.io/project/wikipedits/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Solarity</title>
+      <link>https://e-bug.github.io/project/solarity/</link>
+      <pubDate>Thu, 23 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://e-bug.github.io/project/solarity/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>SecureRide</title>
+      <link>https://e-bug.github.io/project/secureride/</link>
+      <pubDate>Wed, 22 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://e-bug.github.io/project/secureride/</guid>
+      <description></description>
+    </item>
+    
+    <item>
+      <title>Twitter Sentiment Classification</title>
+      <link>https://e-bug.github.io/project/tweets/</link>
+      <pubDate>Tue, 21 Nov 2017 00:00:00 +0000</pubDate>
+      
+      <guid>https://e-bug.github.io/project/tweets/</guid>
+      <description></description>
+    </item>
+    
+  </channel>
+</rss>

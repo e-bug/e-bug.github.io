@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="utf-8" standalone="yes" ?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
+  <channel>
+    <title>Posts on emanuele bugliarello</title>
+    <link>https://e-bug.github.io/post/</link>
+    <description>Recent content in Posts on emanuele bugliarello</description>
+    <generator>Hugo -- gohugo.io</generator>
+    <language>en-us</language>
+    <copyright>&amp;copy; 2017 Emanuele Bugliarello</copyright>
+    <lastBuildDate>Sun, 01 Jan 2017 00:00:00 -0800</lastBuildDate>
+    <atom:link href="/post/" rel="self" type="application/rss+xml" />
+    
+    <item>
+      <title>What I learned from processing big data with Spark</title>
+      <link>https://e-bug.github.io/post/what-i-learned-from-processing-big-data-with-spark/</link>
+      <pubDate>Sat, 30 Sep 2017 00:00:00 -0700</pubDate>
+      
+      <guid>https://e-bug.github.io/post/what-i-learned-from-processing-big-data-with-spark/</guid>
+      <description>
+
+&lt;p&gt;During my semester project, I was faced with the task of processing a large data set (6 TB) consisting of all the revisions in the English Wikipedia till October 2016.
+We chose Apache Spark as our cluster-computing framework, and hence I ended up spending a lot of time working with it. In this post, I want to share some of the lessons I learned throughout the use of PySpark, Spark&amp;rsquo;s Python API.&lt;/p&gt;
+
+&lt;p&gt;Spark is a framework to build and run distributed data manipulation algorithms, designed to be faster, easier and to support more types of computations than Hadoop MapReduce. In fact, Spark is known for being able to keep large working datasets in memory between jobs, hence providing a performance boost that is up to &lt;a href=&#34;https://spark.apache.org/&#34; target=&#34;_blank&#34;&gt;100 times faster than Hadoop&lt;/a&gt;.&lt;/p&gt;
+
+&lt;p&gt;Although it is written in Scala, Spark exposes the Spark programming model to Java, Scala, Python and R.
+While I had the opportunity to develop some small Spark applications in Scala in a previous class, this was the first time I had to handle this amount of data and we agreed to use the PySpark API, in Python, as Python is now become the lingua franca for data science applications. Moreover, using the Python API has a negligible performance overhead compared to the Scala one.&lt;/p&gt;
+
+&lt;h2 id=&#34;pyspark&#34;&gt;PySpark&lt;/h2&gt;
+
+&lt;p&gt;PySpark is actually built on top of Spark&amp;rsquo;s Java API. In the Python driver program, SparkContext uses &lt;code&gt;Py4J&lt;/code&gt; to launch a JVM which loads a JavaSparkContext that communicates with the Spark executors across the cluster.
+Python API calls to the SparkContext object are then &lt;em&gt;translated into Java API calls&lt;/em&gt; to the JavaSparkContext, resulting in data being processed in Python and cached/shuffled in the JVM.&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;img src=&#34;https://e-bug.github.io/img/posts/spark_tips/pyspark_internals.png&#34; alt=&#34;PySpark Internals&#34;/&gt;
+  &lt;figcaption itemprop=&#34;caption description&#34;&gt;[&lt;a href=&#34;https://cwiki.apache.org/confluence/display/SPARK/PySpark+Internals&#34;&gt;PySpark internals&lt;/a&gt;]&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;&lt;code&gt;RDD&lt;/code&gt; (Resilient Distributed Datasets) is defined in Spark Core, and it represents a collection of items distributed across the cluster that can be manipulated in parallel.
+PySpark uses PySpark RDDs which are just RDDs of Python objects, such as lists, that might store objects with different types. RDD transformations in Python are then mapped to transformations on PythonRDD objects in Java.&lt;/p&gt;
+
+&lt;h2 id=&#34;spark-sql-and-dataframes&#34;&gt;Spark SQL and DataFrames&lt;/h2&gt;
+
+&lt;p&gt;At its core, Spark is a computational engine that is responsible for scheduling, distributing, and monitoring applications consisting of many computational tasks on a computing cluster. In addition, Spark also supports a rich set of higher-level tools including &lt;em&gt;Spark SQL&lt;/em&gt; for SQL and structured data processing, &lt;em&gt;MLlib&lt;/em&gt; for machine learning, &lt;em&gt;GraphX&lt;/em&gt; for graph processing, and &lt;em&gt;Spark Streaming&lt;/em&gt;.&lt;/p&gt;
+
+&lt;figure&gt;
+  &lt;img src=&#34;https://e-bug.github.io/img/posts/spark_tips/spark_stack.png&#34; alt=&#34;Spark Stack&#34;/&gt;
+  &lt;figcaption itemprop=&#34;caption description&#34;&gt;[&lt;a href=&#34;https://www.safaribooksonline.com/library/view/learning-spark/9781449359034/ch01.html&#34;&gt;Spark stack&lt;/a&gt;]&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;Whenever analyzing (semi-)structured data with Spark, it is strongly suggested to make use of &lt;em&gt;Spark SQL&lt;/em&gt;: The interfaces provided by Spark SQL enrich Spark with more information about the structure of both the data and the computation being performed, and this extra information is also used to perform further optimizations.
+There are several ways to interact with Spark SQL including SQL, the DataFrames API and the Datasets API. In my project, I only employed the &lt;em&gt;DataFrame API&lt;/em&gt; as the starting data set is available in this format.&lt;/p&gt;
+
+&lt;p&gt;A &lt;code&gt;DataFrame&lt;/code&gt; is a distributed collection of data (a collection of rows) organized into named columns. It is based on the data frame concept in R or in Pandas, and it is similar to a table in relational database or an Excel sheet with column headers.
+DataFrames can be constructed from a wide array of sources such as: structured data files, tables in Hive, external databases, or existing RDDs; and they also share some common characteristics with RDD: they are &lt;em&gt;immutable&lt;/em&gt;, &lt;em&gt;lazy&lt;/em&gt; and &lt;em&gt;distributed&lt;/em&gt; in nature.&lt;/p&gt;
+
+&lt;h2 id=&#34;implementation-best-practices&#34;&gt;Implementation best practices&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;Broadcast variables.&lt;/strong&gt; When you have a large variable to be shared across the nodes, use a &lt;code&gt;broadcast variable&lt;/code&gt; to reduce the communication cost.
+If you don&amp;rsquo;t, this same variable will be sent separately for each parallel operation. Also, the default variable passing mechanism is optimized for small variables and can be slow when the variable is large.
+Broadcast variables allow the programmer to keep a read-only variable cached, in deserialized form, on &lt;em&gt;each machine&lt;/em&gt; rather than shipping a copy of it with tasks.
+The broadcast of variable &lt;code&gt;v&lt;/code&gt; can be created by &lt;code&gt;bV = sc.broadcast(v)&lt;/code&gt;. Then the value of this broadcast variable can be accessed via &lt;code&gt;bV.value&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Parquet and Spark.&lt;/strong&gt; It is well-known that columnar storage saves both time and space when it comes to big data processing. In particular, Parquet is shown to boost Spark SQL performance by &lt;a href=&#34;https://developer.ibm.com/hadoop/2016/01/14/5-reasons-to-choose-parquet-for-spark-sql/&#34; target=&#34;_blank&#34;&gt;10x on average compared to using text&lt;/a&gt;.
+Spark SQL provides support for both reading and writing Parquet files that automatically capture the schema of the original data, so there is really no reason not to use Parquet when employing Spark SQL.
+Saving the &lt;code&gt;df&lt;/code&gt; DataFrame as Parquet files is as easy as writing &lt;code&gt;df.write.parquet(outputDir)&lt;/code&gt;. This creates &lt;code&gt;outputDir&lt;/code&gt; directory and stores, under it, all the part files created by the reducers as Parquet files.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Overwrite save mode in a cluster.&lt;/strong&gt; When saving a DataFrame to a data source, by default, Spark throws an exception if data already exists. However, It is possible to explicitly specify the behavior of the save operation when data already exists. Among the available options, &lt;code&gt;overwrite&lt;/code&gt; plays an important role when running on a cluster. In fact, it allows to successfully complete a job even when a node fails while storing data into disk, allowing another node to overwrite the partial results saved by the failed one.
+For instance, the &lt;code&gt;df&lt;/code&gt; DataFrame can be saved as Parquet files using the overwrite save mode by &lt;code&gt;df.write.mode(&#39;overwrite&#39;).parquet(outputDir)&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Clean code vs. performance.&lt;/strong&gt; When processing a large amount of data, you may need to trade writing clean code for a performance boost.
+For instance, I once reported that filtering a specific array by creating a new one via list comprehension (one line) before processing it was an order of magnitude slower than writing a longer for loop containing the required conditional statements along with the processing steps.
+This is because a new array was being created and additional time to allocate it is required.
+While this might seem a negligible quantity, when the volume of data is huge, this can make the difference between a feasible and an unfeasible operation.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Process data in batches.&lt;/strong&gt; While I was initially required to process our original DataFrame in batches due to the cluster configurations, this actually resulted in a very functional method to process data in later stages too.
+The partial results of each batch can then just be merged together and this approach can be very helpful as (i) some nodes might go down and lead your job to fail, forcing you to rerun it on the entire dataset; and (ii) this might be the only methodology to crunch your data if your application is memory-bounded.
+Moreover, merging all the partial DataFrame I obtained after each stage was an extremely fast and cheap operation, marginalizing the additional overhead.&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Run multiple regexs in a cluster.&lt;/strong&gt; This last point might cause you to jolt, and I was surprised when I found it out.
+When you need to match multiple regex patterns, you usually pipe them (&lt;code&gt;|&lt;/code&gt; operator) into a single one and go through a text only once. In fact, this is usually faster as reading from disk is expensive. For instance, in a sample data set I had in my laptop, this resulted in a 3-minute faster execution than running each regex separately (7 vs. 10 minutes). However, when I ran this experiment on a larger collection in a cluster, I noticed that running each regex separately was slightly faster than grouping them together. So, you can skip all the tests needed to ensure that the different regexs do not interfere with each other when grouped together and directly develop your application using multiple regexs.&lt;/p&gt;
+
+&lt;h2 id=&#34;tuning-your-spark-application&#34;&gt;Tuning your Spark application&lt;/h2&gt;
+
+&lt;figure&gt;
+  &lt;img src=&#34;https://e-bug.github.io/img/posts/spark_tips/spark_architecture.png&#34; alt=&#34;Spark Architecture&#34;/&gt;
+  &lt;figcaption itemprop=&#34;caption description&#34;&gt;[&lt;a href=&#34;http://spark.apache.org/docs/1.3.0/cluster-overview.html&#34;&gt;Spark architecture&lt;/a&gt;]&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;I spent most of my time in tuning the amount of resources required to successfully complete different jobs. While asking for an insufficient amount of memory might lead a job to fail, requesting unnecessary resources comes with a cost that might be significant for long runs.
+In general, it is important to understand how to properly determine the amount of resources required to run a given job.&lt;/p&gt;
+
+&lt;p&gt;The most relevant settings are:&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;code&gt;--num-executors&lt;/code&gt;: number of executors requested&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;--executor-cores&lt;/code&gt;: number of cores per executor requested&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;--executor-memory&lt;/code&gt;: executor JVM heap size&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;--conf spark.yarn.executor.memoryOverhead&lt;/code&gt;: determines full memory request (in MB) to YARN for each executor. Default: max(384, 0.07*spark.executor.memory)&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;--driver-memory&lt;/code&gt; and &lt;code&gt;--driver-cores&lt;/code&gt;: resources for the application master&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;figure&gt;
+  &lt;img src=&#34;https://e-bug.github.io/img/posts/spark_tips/spark_memory.png&#34; alt=&#34;Spark Memory&#34;/&gt;
+  &lt;figcaption itemprop=&#34;caption description&#34;&gt;[&lt;a href=&#34;https://blog.cloudera.com/blog/2015/03/how-to-tune-your-apache-spark-jobs-part-2/&#34;&gt;Spark &amp; YARN memory hierarchy&lt;/a&gt;]&lt;/figcaption&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;When using PySpark, it is noteworthy that Python is all off-heap memory and does not use the RAM reserved for heap. In fact, recall that PySpark starts both a Python process and a Java one. The Java process is what uses heap memory, while the Python process uses off heap. So, you may need to decrease the amount of heap memory specified via &lt;code&gt;--executor-memory&lt;/code&gt;  to increase the off-heap memory via &lt;code&gt;spark.yarn.executor.memoryOverhead&lt;/code&gt;.&lt;/p&gt;
+
+&lt;p&gt;Also, running tiny executors (with a single core, for example) throws away benefits that come from running multiple tasks in a single JVM. For instance, broadcast variables need to be replicated once on each executor, so many small executors will result in many more copies of the data.&lt;/p&gt;
+
+&lt;p&gt;The number of cores you configure is another important factor as it affects the number of concurrent tasks that can be run in memory at one time. This in turn affects the amount of execution memory being used by each tasks as it is shared between them.
+For example, with 12GB heap memory running 8 tasks, each one roughly gets about 1.5GB.&lt;/p&gt;
+
+&lt;p&gt;&lt;em&gt;So, how do I tune my Spark application?&lt;/em&gt;
+My suggestion is to start with a &lt;em&gt;per-core mindset&lt;/em&gt; and then scale out.
+Consider, for instance, the IC Hadoop cluster with 7 nodes, each equipped with 38 VCores and 238 GB of RAM.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;Start by running a single-core worker executor per node and try to estimate the amount of memory that might be needed by a single core to process your data without failing.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;Once you have determined the memory requirements of your application, you can increase the number of cores per executor to N while assigning each of them roughly N times the memory you established.
+As I said before, having more cores per executor allows you to have some benefits as they run in a single JVM, but too many cores per executor might slow you down at writing time. Hence, this is a value that strongly depends on your application.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;You can then scale out in terms of number of executors with the constraints of the number of available cores and RAM per machine (respectively, up to 38 and 238GB in our case if your are the only user of the cluster). Moreover, recall that an additional container is used by the driver.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;common-errors-and-how-to-fix-them&#34;&gt;Common errors and how to fix them&lt;/h2&gt;
+
+&lt;p&gt;When developing your Spark application, you come across very long stack traces whenever an exception is raised. Hence, it might be a bit difficult to find the cause of your error and how to solve it, especially when this is due to resource allocation.
+Here are presented some of the most frequently errors I met during my semester project and what I did to fix them.&lt;/p&gt;
+
+&lt;ul&gt;
+&lt;li&gt;&lt;p&gt;&lt;em&gt;&amp;hellip; Consider boosting spark.yarn.executor.memoryOverhead.&lt;/em&gt;&lt;br&gt;
+When this message is displayed, just request a larger amount of off heap memory via &lt;code&gt;--conf spark.yarn.executor.memoryOverhead=&amp;lt;N_MB&amp;gt;&lt;/code&gt;, where &lt;code&gt;&amp;lt;N_MB&amp;gt;&lt;/code&gt; is the number of MB requested per executor.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;java.lang.OutOfMemoryError: Java heap space&lt;/code&gt; &lt;br&gt;
+&lt;code&gt;java.lang.OutOfMemoryError: GC overhead limit exceeded&lt;/code&gt;&lt;br&gt;
+When either of these errors is thrown, consider boosting &lt;code&gt;driver-memory&lt;/code&gt; and/or &lt;code&gt;executor-memory&lt;/code&gt;.
+In particular, requesting a larger amount of the driver memory might seem counterintuitive in some context but can actually solve the problem without requesting a larger amount of memory for each executor.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;code&gt;java.lang.NullPointerException&lt;/code&gt;&lt;br&gt;
+When this exception is raised, the cause might be in the cluster itself. I came across this expection when the service was down in one of the cluster, and when there was no storage left in my output directory.&lt;/p&gt;&lt;/li&gt;
+
+&lt;li&gt;&lt;p&gt;&lt;em&gt;Serialized results &amp;hellip; is bigger than spark.driver.maxResultSize&lt;/em&gt;&lt;br&gt;
+When this message is displayed, just set a larger maximum size for a variable that needs to be collected at the driver via &lt;code&gt;--conf spark.driver.maxResultSize=&amp;lt;N&amp;gt;G&lt;/code&gt;, where &lt;code&gt;&amp;lt;N&amp;gt;&lt;/code&gt; is the number of GB requested.&lt;/p&gt;&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&#34;conclusions&#34;&gt;Conclusions&lt;/h2&gt;
+
+&lt;p&gt;Determining the correct amount of resources requested by a Spark application might take more time than you expect. This post intends to give you some insights on how to reduce it by firstly looking at single-core executors and then scaling out, as the memory assigned to each executor is, more or less, equally split among its cores.&lt;/p&gt;
+
+&lt;p&gt;Other take-aways are the internal structure of PySpark and its off-heap memory requirements, which I was initially unaware of, and the lists of best practices and of common errors that sprouted during my semester-long research.&lt;/p&gt;
+
+&lt;p&gt;These were overall the tasks were I spent most of my time. There are different resources online that can help you get a better understanding of what is going under the hood when you run a Spark application, but information is scattered among several sources and might take you a while to extract the piece you are looking for.
+Had I had this post available at the time of my semester project, it would have saved me substantial amount of searching time, and I hope this can actually be helpful to you!&lt;/p&gt;
+</description>
+    </item>
+    
+  </channel>
+</rss>
